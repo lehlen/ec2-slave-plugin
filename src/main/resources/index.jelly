@@ -22,6 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 -->
 <div>
-  This plugin provides the ability to create and launch slaves based on
-  <a href="http://aws.amazon.com/ec2/">Amazon EC2</a> AMIs.
+  This plugin provides the ability to start and stop
+  <a href="http://aws.amazon.com/ec2/">Amazon EC2</a> Instances.
 </div>

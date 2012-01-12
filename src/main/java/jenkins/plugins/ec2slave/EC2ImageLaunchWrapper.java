@@ -66,15 +66,9 @@ public class EC2ImageLaunchWrapper extends ComputerLauncher {
 
     private static final Logger LOGGER = Logger.getLogger(EC2ImageLaunchWrapper.class.getName());
 
-    private String ami;
+    private String instanceId;
 
-    private String instanceType;
-
-    private String securityGroup;
-
-    private String availabilityZone;
-
-    private String keypairName;
+    //private String instanceType;
 
     private int retryIntervalSeconds = 10;
 
@@ -86,31 +80,25 @@ public class EC2ImageLaunchWrapper extends ComputerLauncher {
 
     private transient AmazonEC2Client ec2;
 
-    private transient String curInstanceId;
-
     private transient boolean testMode = false;
 
     private transient boolean preLaunchOk = false;
 
-    public EC2ImageLaunchWrapper(ComputerConnector computerConnector, String secretKey, String accessKey, String ami,
-                                 String instanceType, String keypairName, String securityGroup, String availabilityZone) {
-        this.ami = ami;
+    public EC2ImageLaunchWrapper(ComputerConnector computerConnector, String secretKey, String accessKey, String instanceId){
+        this.instanceId = instanceId;
         this.computerConnector = computerConnector;
         // TODO: make a combobox for instance type in the slave config
-        this.instanceType = instanceType;
-        this.keypairName = keypairName;
-        this.securityGroup = securityGroup;
-        this.availabilityZone = availabilityZone;
+        //this.instanceType = instanceType;
 
         AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
         ec2 = new AmazonEC2Client(credentials);
-        ec2.setEndpoint("us-west-1.ec2.amazonaws.com");
+        //ec2.setEndpoint("us-east-1a.ec2.amazonaws.com");
 
     }
 
     ////
     // EC2 Util methods
-    //
+/*
     protected String launchInstanceFromImage() {
         RunInstancesRequest req = new RunInstancesRequest().withImageId(ami).withInstanceType(instanceType)
                 .withKeyName(keypairName).withMinCount(1).withMaxCount(1);
@@ -134,33 +122,35 @@ public class EC2ImageLaunchWrapper extends ComputerLauncher {
         Instance instance = rvn.getInstances().get(0);
         return instance.getInstanceId();
     }
-
+*/
     protected InstanceStateName getInstanceState(String instanceId) {
         DescribeInstancesRequest descReq = new DescribeInstancesRequest().withInstanceIds(instanceId);
         Instance instance = ec2.describeInstances(descReq).getReservations().get(0).getInstances().get(0);
         return InstanceStateName.fromValue(instance.getState().getName());
     }
 
-    protected String getInstancePublicHostName() {
-        DescribeInstancesRequest descReq = new DescribeInstancesRequest().withInstanceIds(curInstanceId);
+    protected String getInstanceAddress() {
+        DescribeInstancesRequest descReq = new DescribeInstancesRequest().withInstanceIds(instanceId);
         Instance instance = ec2.describeInstances(descReq).getReservations().get(0).getInstances().get(0);
-        return instance.getPublicDnsName();
+        return instance.getPrivateIpAddress();
     }
 
+/*
     public void terminateInstance(PrintStream logger) {
-        logger.println("EC2InstanceComputerLauncher: Terminating EC2 instance [" + curInstanceId + "] ...");
+        logger.println("EC2InstanceComputerLauncher: Terminating EC2 instance [" + instanceId + "] ...");
         if (testMode)
             return;
         
-        ec2.terminateInstances(new TerminateInstancesRequest().withInstanceIds(curInstanceId));
+        ec2.terminateInstances(new TerminateInstancesRequest().withInstanceIds(instanceId));
     }
+*/
     
     public void stopInstance(PrintStream logger) {
-        logger.println("EC2InstanceComputerLauncher: Stopping EC2 instance [" + curInstanceId + "] ...");
+        logger.println("*** STOP EC2InstanceComputerLauncher: Stopping EC2 instance [" + instanceId + "] ...");
         if (testMode)
             return;
 
-        ec2.stopInstances(new StopInstancesRequest().withInstanceIds(curInstanceId));
+        ec2.stopInstances(new StopInstancesRequest().withInstanceIds(instanceId));
     }
 
     public List<String> getAvailabilityZones() {
@@ -171,7 +161,7 @@ public class EC2ImageLaunchWrapper extends ComputerLauncher {
         }
         return ret;
     }
-
+/*
     public List<String> getSecurityGroups() {
         DescribeSecurityGroupsResult res = ec2.describeSecurityGroups();
         ArrayList<String> ret = new ArrayList<String>();
@@ -180,63 +170,59 @@ public class EC2ImageLaunchWrapper extends ComputerLauncher {
         }
         return ret;
     }
-
-    //
-    ////
+*/
 
     @Override
     public boolean isLaunchSupported() {
-        if (preLaunchOk) {
+        if (instanceIsRunning() && preLaunchOk ) {
             // if the EC2 instance is up, launch supported should be determined
             // by the underlying launcher
             // this prevents Demand RetentionStrategy from attempting to spin up
             // endless EC2 instances
             boolean launchSupported = computerLauncher.isLaunchSupported();
-            LOGGER.fine("EC2 instance is running, underlying launcher will now answer this question with " + launchSupported);
+            LOGGER.info("*** EC2 instance:" +instanceId +" is running, underlying launcher will now answer this question with " + launchSupported);
             return launchSupported;
         }
         // if the EC2 instance has not been started yet, return true here so we
         // seem like a legit auto-launchable launcher
+	LOGGER.info("*** EC2 instance:" +instanceId +"not runnig or object not created, answer always TRUE ");
         return true;
     }
 
     public boolean instanceIsRunning() {
-        return (curInstanceId != null && getInstanceState(curInstanceId) == Running);
+        return (instanceId != null && getInstanceState(instanceId) == Running);
     }
     private void launchInstance(PrintStream logger) {
-        logger.println("Starting instance: " + curInstanceId);
-
-        ec2.startInstances( new StartInstancesRequest().withInstanceIds(curInstanceId));
+        logger.println("*** Starting instance: " + instanceId);
+	LOGGER.info("*** Starting instance: " + instanceId);
+        ec2.startInstances( new StartInstancesRequest().withInstanceIds(instanceId));
         //String currentState = startResult.getStartingInstances().get(0).getCurrentState().getName();
     }
 
     @Override
-    public void launch(SlaveComputer computer, TaskListener listener) throws IOException, InterruptedException {
+    public void launch(SlaveComputer computer, TaskListener listener) throws IOException, InterruptedException, IllegalStateException {
+        LOGGER.info("*** EC2 instance " + instanceId +" launch called");
         try {
-            if (curInstanceId == null) {
 
-                preLaunch(listener.getLogger());
-                preLaunchOk = true;
+                final InstanceStateName currentInstanceState = getInstanceState(instanceId);
 
-            } else {
-
-                final InstanceStateName currentInstanceState = getInstanceState(curInstanceId);
-
-                if (currentInstanceState == Pending) {
-                    //TODO:mpatel A better approach will be to shutdown and start the machine again associated with a timeout.
-                    throw new IllegalStateException("EC2 Instance " + curInstanceId
-                            + " is in Pending state. Not sure what to do here, try again?");
-                } else if (currentInstanceState == Terminated) {
-                    curInstanceId = null;
+		if (currentInstanceState == Running) {
+		    LOGGER.info("*** instance" + instanceId + "Skipping EC2 part of launch, since the instance is already Running");
+		}
+                else if (currentInstanceState == Pending) {
+		    LOGGER.info("*** instance" + instanceId + "Skipping EC2 part of launch, since the instance is Pending");
+                } 
+		else if (currentInstanceState == Terminated) {
+		    LOGGER.info("*** instance" + instanceId + "Terminated. ERROR");
+                    throw new IllegalStateException("*** instance" + instanceId + "Terminated. ERROR");
+                } 
+		else if (currentInstanceState == Stopping || currentInstanceState == Stopped) {
                     preLaunch(listener.getLogger());
-                    preLaunchOk = true;
-                } else if (currentInstanceState == Stopping || currentInstanceState == Stopped) {
-                    preLaunch(listener.getLogger());
-                } else {
-                    LOGGER.info("Skipping EC2 part of launch, since the instance is already running");
+                } 
+		else {
+                    LOGGER.info("*** instance" + instanceId + "Skipping EC2 part of launch:" + currentInstanceState);
                 }
 
-            }
         } catch (IllegalStateException ise) {
             listener.error(ise.getMessage());
             return;
@@ -248,14 +234,15 @@ public class EC2ImageLaunchWrapper extends ComputerLauncher {
             return;
         }
 
-        LOGGER.info("EC2 instance " + curInstanceId
+        LOGGER.info("*** EC2 instance " + instanceId
                 + " has been created to serve as a Jenkins slave.  Passing control to computer launcher.");
-        computerLauncher = computerConnector.launch(getInstancePublicHostName(), listener);
+        computerLauncher = computerConnector.launch(getInstanceAddress(), listener);
+	preLaunchOk = true;
         computerLauncher.launch(computer, listener);
     }
 
     /**
-     * Creates an EC2 instance given an AMI, readying it to serve as a Jenkins
+     * Start an EC2 instance given an instanceId, readying it to serve as a Jenkins
      * slave once launch is called later
      *
      * @param logger where to write messages so the user will see them in the
@@ -264,41 +251,37 @@ public class EC2ImageLaunchWrapper extends ComputerLauncher {
      */
     public void preLaunch(PrintStream logger) throws InterruptedException {
 
-        //logger.println("Creating new EC2 instance from AMI [" + ami + "]...");
+        logger.println("*** Starting new EC2 instance from Id [" + instanceId + "]...");
         if (testMode)
             return;
 
-        if (curInstanceId == null) {
-            curInstanceId = launchInstanceFromImage();
-        } else {
-            launchInstance(logger);
-        }
+        launchInstance(logger);
 
         int retries = 0;
         InstanceStateName state = null;
 
         while (++retries <= maxRetries) {
 
-            logger.println(MessageFormat.format("checking state of instance [{0}]...", curInstanceId));
+            logger.println(MessageFormat.format("checking state of instance [{0}]...", instanceId));
 
-            state = getInstanceState(curInstanceId);
+            state = getInstanceState(instanceId);
 
-            logger.println(MessageFormat.format("state of instance [{0}] is [{1}]", curInstanceId, state.toString()));
+            logger.println(MessageFormat.format("state of instance [{0}] is [{1}]", instanceId, state.toString()));
             if (state == Running || state == Stopped) {
                 logger.println(MessageFormat.format(
-                        "instance [{0}] is " + state + ", proceeding to launching Jenkins on this instance", curInstanceId));
+                        "instance [{0}] is " + state + ", proceeding to launching Jenkins on this instance", instanceId));
                 Thread.sleep(retryIntervalSeconds * 6000);
                 return;
             } else if (state == Pending) {
                 logger.println(MessageFormat.format("instance [{0}] is pending, waiting for [{1}] seconds before retrying",
-                        curInstanceId, retryIntervalSeconds));
+                        instanceId, retryIntervalSeconds));
                 Thread.sleep(retryIntervalSeconds * 1000);
             } else if (state == Stopping) {
                 logger.println(MessageFormat.format("instance [{0}] is Stopping. Waiting for [{1}] seconds before retrying",
-                        curInstanceId, retryIntervalSeconds));
+                        instanceId, retryIntervalSeconds));
             } else {
                 String msg = MessageFormat.format("instance [{0}] encountered unexpected state [{1}]. Aborting launch",
-                        curInstanceId, state.toString());
+                        instanceId, state.toString());
                 logger.println(msg);
                 throw new IllegalStateException(msg);
             }
@@ -310,11 +293,11 @@ public class EC2ImageLaunchWrapper extends ComputerLauncher {
     public void afterDisconnect(SlaveComputer computer, TaskListener listener) {
         computerLauncher.afterDisconnect(computer, listener);
 
-        //LOGGER.info("Terminating EC2 instance " + curInstanceId);
+        
         //terminateInstance(listener.getLogger());
-        //curInstanceId = null;
+        //instanceId = null;
+	LOGGER.info("*** Stop EC2 instance " + instanceId);
         stopInstance(listener.getLogger());
-        preLaunchOk = false;
     }
 
     @Override

@@ -39,31 +39,15 @@ THE SOFTWARE.
       
       <!-- f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="secretKey,accessKey" /-->
       
-      <f:entry title="${%AMI}" field="imageId">
+      <f:entry title="${%Instance ID}" field="instanceId">
         <f:textbox />
       </f:entry>
       
-      <f:validateButton title="${%Check AMI}" progress="${%Checking...}" method="validateAmi" with="secretKey,accessKey,imageId" />
+      <f:validateButton title="${%Check Instance}" progress="${%Checking...}" method="validateInstance" with="secretKey,accessKey,instanceId" />
       
-      <f:entry title="${%Instance Type}" field="instanceType">
+      <!--<f:entry title="${%Instance Type}" field="instanceType">
         <f:textbox />
-      </f:entry>
-      
-      <f:entry title="${%Keypair Name}" field="keypairName">
-        <f:textbox />
-      </f:entry>
-      
-      <f:advanced>
-      
-        <f:entry title="${%Security Group}" field="securityGroup">
-          <f:textbox />
-        </f:entry>
-      
-        <f:entry title="${%Availability Zone}" field="availabilityZone">
-          <f:textbox />
-        </f:entry>
-      
-      </f:advanced>
+      </f:entry>-->      
       
       <!-- f:validateButton title="${%Check AMI}" progress="${%Checking...}" method="validateAmi" with="secretKey,accessId,region,ami" /-->
   </f:section>
