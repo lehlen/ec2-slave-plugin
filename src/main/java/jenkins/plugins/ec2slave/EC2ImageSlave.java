@@ -72,7 +72,7 @@ public final class EC2ImageSlave extends Slave {
 
   private static final Logger LOGGER = Logger.getLogger(EC2ImageSlave.class.getName());
 
-  private String accessKey, secretKey, instanceId;
+  private String accessKey, secretKey, instanceId, instanceIp;
 
   private transient EC2ImageLaunchWrapper ec2ImageLaunchWrapper;
 
@@ -83,7 +83,7 @@ public final class EC2ImageSlave extends Slave {
   private ComputerConnector computerConnector;
 
   @DataBoundConstructor
-  public EC2ImageSlave(String secretKey, String accessKey, String instanceId,
+  public EC2ImageSlave(String secretKey, String accessKey, String instanceId, String instanceIp,
       String name, String nodeDescription, String remoteFS,
       String numExecutors, Mode mode, String labelString, ComputerConnector computerConnector,
       RetentionStrategy retentionStrategy, List<? extends NodeProperty<?>> nodeProperties) throws FormException,
@@ -101,11 +101,14 @@ public final class EC2ImageSlave extends Slave {
         throw new FormException(msg, "accessKey");
       if (!instanceId.equals(this.instanceId))
         throw new FormException(msg, "instanceId");
+      if (!instanceIp.equals(this.instanceIp))
+        throw new FormException(msg, "instanceIp");
     }
 
     this.secretKey = secretKey;
     this.accessKey = accessKey;
     this.instanceId = instanceId;
+    this.instanceIp = instanceIp;
   }
 
   @Override
@@ -114,7 +117,7 @@ public final class EC2ImageSlave extends Slave {
     //computerConnector.launch(..) here which will return a ComputerLauncher with the 
     //hostname already set.  This implies that the EC2ImageSlave config will be displaying
     //Computer *Connector* descriptor stuff rather than *Launcher*
-    ec2ImageLaunchWrapper = new EC2ImageLaunchWrapper(computerConnector, secretKey, accessKey, instanceId);
+    ec2ImageLaunchWrapper = new EC2ImageLaunchWrapper(computerConnector, secretKey, accessKey, instanceId, instanceIp);
 
     setLauncher(ec2ImageLaunchWrapper);
 
