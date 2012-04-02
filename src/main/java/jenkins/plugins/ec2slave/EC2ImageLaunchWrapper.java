@@ -67,6 +67,7 @@ public class EC2ImageLaunchWrapper extends ComputerLauncher {
     private static final Logger LOGGER = Logger.getLogger(EC2ImageLaunchWrapper.class.getName());
 
     private String instanceId;
+    private String instanceIp;
 
     //private String instanceType;
 
@@ -84,8 +85,9 @@ public class EC2ImageLaunchWrapper extends ComputerLauncher {
 
     private transient boolean preLaunchOk = false;
 
-    public EC2ImageLaunchWrapper(ComputerConnector computerConnector, String secretKey, String accessKey, String instanceId){
+    public EC2ImageLaunchWrapper(ComputerConnector computerConnector, String secretKey, String accessKey, String instanceId, String instanceIp){
         this.instanceId = instanceId;
+        this.instanceIp = instanceIp;
         this.computerConnector = computerConnector;
         // TODO: make a combobox for instance type in the slave config
         //this.instanceType = instanceType;
@@ -132,7 +134,10 @@ public class EC2ImageLaunchWrapper extends ComputerLauncher {
     protected String getInstanceAddress() {
         DescribeInstancesRequest descReq = new DescribeInstancesRequest().withInstanceIds(instanceId);
         Instance instance = ec2.describeInstances(descReq).getReservations().get(0).getInstances().get(0);
-        return instance.getPrivateIpAddress();
+        if (!this.instanceIp.equals(""))
+            return this.instanceIp;
+        else
+            return instance.getPrivateIpAddress();
     }
 
 /*
