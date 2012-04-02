@@ -43,6 +43,10 @@ THE SOFTWARE.
         <f:textbox />
       </f:entry>
       
+      <f:entry title="${%Instance IP}" field="instanceIp">
+        <f:textbox />
+      </f:entry>
+      
       <f:validateButton title="${%Check Instance}" progress="${%Checking...}" method="validateInstance" with="secretKey,accessKey,instanceId" />
       
       <!--<f:entry title="${%Instance Type}" field="instanceType">
