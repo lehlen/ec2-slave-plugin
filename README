@@ -6,6 +6,7 @@ periodically and wish to leverage Amazon EC2 cloud instances to do that work.  U
 simply create a new node of type "EC2 Image Slave".  Open up "slaveConfig.png" for an idea of what it will look like.
 
 This is a maven project.  To build, run:
+$ sudo apt-get install openjdk-6-jdk
 $ mvn clean -DskipTests install
 this will yield a proper Jenkins plugin at target/ec2-slave.hpi
 

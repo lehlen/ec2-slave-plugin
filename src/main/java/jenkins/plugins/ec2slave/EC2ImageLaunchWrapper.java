@@ -94,7 +94,7 @@ public class EC2ImageLaunchWrapper extends ComputerLauncher {
 
         AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
         ec2 = new AmazonEC2Client(credentials);
-        //ec2.setEndpoint("us-east-1a.ec2.amazonaws.com");
+        ec2.setEndpoint("ec2.us-west-2.amazonaws.com");
 
     }
 

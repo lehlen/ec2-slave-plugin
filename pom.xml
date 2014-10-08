@@ -8,7 +8,7 @@
   </parent>
   
   <artifactId>ec2-slave</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.2-Oct2014</version>
   <packaging>hpi</packaging>
   <name>Jenkins Amazon EC2 slave plugin</name>
   <url>http://wiki.jenkins-ci.org/</url>
@@ -18,22 +18,23 @@
     <developerConnection>scm:git:git@github.com:jenkinsci/ec2-slave-plugin.git</developerConnection>
   </scm>
 
-<repositories>
-    <repository>
-      <id>jenkins-plugin</id>
-      <url>http://maven.jenkins-ci.org/content/groups/artifacts/org/jenkins-ci/plugins/</url>
-    </repository>
-    <repository>
-      <id>jenkins</id>
-      <url>http://maven.jenkins-ci.org/content/groups/artifacts/</url>
-    </repository>
- </repositories>
-
+  <repositories>
+	  <repository>
+		  <id>repo.jenkins-ci.org</id>
+		  <url>http://repo.jenkins-ci.org/public/</url>
+	  </repository>
+  </repositories>
+  <pluginRepositories> 
+	  <pluginRepository> 
+		  <id>repo.jenkins-ci.org</id> 
+		  <url>http://repo.jenkins-ci.org/public/</url> 
+	  </pluginRepository> 
+  </pluginRepositories> 
   <dependencies>
     <dependency>
     	<groupId>com.amazonaws</groupId>
     	<artifactId>aws-java-sdk</artifactId>
-    	<version>1.2.14</version>
+    	<version>1.8.11</version>
     	<type>jar</type>
     	<scope>compile</scope>
     </dependency>
@@ -48,9 +49,9 @@
 
   <developers>
     <developer>
-      <id>adphillips</id>
-      <name>Aaron Phillips</name>
-      <email>adphillips@gmail.com</email>
+      <id>lehlen</id>
+      <name>Luis Ehlen</name>
+      <email>luis.ehlen@gmail.com</email>
     </developer>
   </developers>
 
